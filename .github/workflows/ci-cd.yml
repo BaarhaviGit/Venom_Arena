@@ -1,0 +1,95 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Use Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x'
+        cache: 'npm'
+        cache-dependency-path: 'server/package.json'
+    - name: Install dependencies
+      working-directory: ./server
+      run: npm install
+    - name: Run syntax check
+      working-directory: ./server
+      run: node -e "require('./game.js'); require('./server.js'); console.log('Syntax check passed');"
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    # Only push image on main branch
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Log in to the Container registry
+      uses: docker/login-action@v2
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata (tags, labels) for Docker
+      id: meta
+      uses: docker/metadata-action@v4
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=sha
+          type=raw,value=latest
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && env.KUBE_CONFIG != null
+    env:
+      KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up kubernetes config
+      run: |
+        mkdir -p ~/.kube
+        echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+        chmod 600 ~/.kube/config
+
+    - name: Deploy to cluster
+      run: |
+        # Apply manifests
+        kubectl apply -f k8s/00-namespace.yaml
+        kubectl apply -f k8s/01-redis.yaml
+        kubectl apply -f k8s/02-snake-app.yaml
+        kubectl apply -f k8s/03-hpa.yaml
+        
+        # Update image
+        IMAGE_TAG=sha-${GITHUB_SHA::7}
+        kubectl set image deployment/snake-app snake-app=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${IMAGE_TAG} -n snake-game
+        
+        # Wait for rollout
+        kubectl rollout status deployment/snake-app -n snake-game
