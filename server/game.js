@@ -70,12 +70,12 @@ function gameLoop(state) {
     head.x += player.direction.x;
     head.y += player.direction.y;
 
-    // 1. Check wall collision
-    if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) {
-      player.alive = false;
-      events.push({ type: 'playerDied', id: player.id, name: player.name });
-      continue;
-    }
+    // 1. Screen wrapping (classic snake style)
+    if (head.x < 0) head.x = GRID_SIZE - 1;
+    else if (head.x >= GRID_SIZE) head.x = 0;
+
+    if (head.y < 0) head.y = GRID_SIZE - 1;
+    else if (head.y >= GRID_SIZE) head.y = 0;
 
     // 2. Check self & other player collision
     let collided = false;
