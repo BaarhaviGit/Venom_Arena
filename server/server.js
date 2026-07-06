@@ -46,19 +46,23 @@ io.on('connection', (socket) => {
 
   socket.on('joinGame', (playerData) => {
     let roomName = null;
+    const mode = playerData.mode || 'multi';
 
-    // Find a room with < 4 players that is waiting
-    for (const r in rooms) {
-      if (rooms[r].status === 'waiting' && Object.keys(rooms[r].players).length < 4) {
-        roomName = r;
-        break;
+    if (mode === 'multi') {
+      // Find a room with < 4 players that is waiting
+      for (const r in rooms) {
+        if (rooms[r].mode !== 'solo' && rooms[r].status === 'waiting' && Object.keys(rooms[r].players).length < 4) {
+          roomName = r;
+          break;
+        }
       }
     }
 
-    // Create new room if none found
+    // Create new room if none found or if solo mode
     if (!roomName) {
       roomName = 'room_' + Math.random().toString(36).substring(2, 9);
       rooms[roomName] = createGameState();
+      rooms[roomName].mode = mode;
     }
 
     socket.join(roomName);
@@ -78,8 +82,13 @@ io.on('connection', (socket) => {
     io.to(roomName).emit('gameState', gameState);
     io.to(roomName).emit('playerJoined', newPlayer.name);
 
-    // If 2 or more players, start the game
-    if (Object.keys(gameState.players).length >= 2 && gameState.status === 'waiting') {
+    if (gameState.mode === 'solo' && gameState.status === 'waiting') {
+      // Start immediately for solo
+      gameState.status = 'playing';
+      io.to(roomName).emit('gameStart');
+      startGameLoop(roomName);
+    } else if (gameState.mode !== 'solo' && Object.keys(gameState.players).length >= 2 && gameState.status === 'waiting') {
+      // If 2 or more players in multi, start the game
       gameState.status = 'playing';
       io.to(roomName).emit('gameStart');
       startGameLoop(roomName);

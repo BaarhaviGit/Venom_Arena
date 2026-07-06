@@ -1,6 +1,6 @@
 const socket = io();
-
-const joinBtn = document.getElementById('join-btn');
+const joinSoloBtn = document.getElementById('join-solo-btn');
+const joinMultiBtn = document.getElementById('join-multi-btn');
 const initialScreen = document.getElementById('initial-screen');
 const gameScreen = document.getElementById('game-screen');
 const canvas = document.getElementById('game-canvas');
@@ -33,13 +33,22 @@ function showToast(message) {
   }, 3000);
 }
 
-joinBtn.addEventListener('click', () => {
+joinSoloBtn.addEventListener('click', () => {
   const pName = nameInput.value.trim() || 'Anonymous';
   initialScreen.classList.add('hidden');
   gameScreen.classList.remove('hidden');
   gameOverOverlay.classList.add('hidden');
-  socket.emit('joinGame', { name: pName });
-  statusMessage.textContent = 'Connecting...';
+  socket.emit('joinGame', { name: pName, mode: 'solo' });
+  statusMessage.textContent = 'Starting Solo Game...';
+});
+
+joinMultiBtn.addEventListener('click', () => {
+  const pName = nameInput.value.trim() || 'Anonymous';
+  initialScreen.classList.add('hidden');
+  gameScreen.classList.remove('hidden');
+  gameOverOverlay.classList.add('hidden');
+  socket.emit('joinGame', { name: pName, mode: 'multi' });
+  statusMessage.textContent = 'Waiting for other players...';
 });
 
 replayBtn.addEventListener('click', () => {
@@ -145,17 +154,25 @@ function draw(state) {
 
     // Draw snake body as a continuous path
     ctx.beginPath();
+    let prevSegment = null;
     player.body.forEach((segment, index) => {
       const x = segment.x * cellSize + cellSize / 2;
       const y = segment.y * cellSize + cellSize / 2;
+      
       if (index === 0) {
         ctx.moveTo(x, y);
         if (player.body.length === 1) {
           ctx.lineTo(x, y); // Ensure a dot is drawn if length is 1
         }
       } else {
-        ctx.lineTo(x, y);
+        // Fix wrap glitch: if distance > 1 cell, it wrapped, so use moveTo instead of lineTo
+        if (Math.abs(segment.x - prevSegment.x) > 1 || Math.abs(segment.y - prevSegment.y) > 1) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
       }
+      prevSegment = segment;
     });
     // Add glow to the snake
     ctx.shadowColor = player.color;

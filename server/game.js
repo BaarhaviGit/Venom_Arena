@@ -6,6 +6,7 @@ function createGameState() {
     food: randomFoodPosition([]),
     gridSize: GRID_SIZE,
     status: 'waiting', // waiting, playing, gameover
+    mode: 'multi' // default mode
   };
 }
 
@@ -108,15 +109,25 @@ function gameLoop(state) {
     }
   }
 
-  // End game if 0 or 1 player alive (if multiplayer)
-  if (players.length > 1 && activePlayers <= 1) {
-    state.status = 'gameover';
-    const winner = players.find(p => p.alive);
-    if (winner) {
-      events.push({ type: 'playerWon', id: winner.id, name: winner.name });
+  // End game conditions
+  const playersArr = Object.values(state.players);
+  const activePlayersCount = playersArr.filter(p => p.alive).length;
+
+  if (state.mode === 'solo') {
+    if (activePlayersCount === 0) {
+      state.status = 'gameover';
     }
-  } else if (players.length === 1 && activePlayers === 0) {
-    state.status = 'gameover';
+  } else {
+    // If multiplayer, game over when 1 or fewer players are alive (and we actually had players)
+    if (playersArr.length > 1 && activePlayersCount <= 1) {
+      state.status = 'gameover';
+      const winner = playersArr.find(p => p.alive);
+      if (winner) {
+        events.push({ type: 'playerWon', id: winner.id, name: winner.name });
+      }
+    } else if (playersArr.length === 1 && activePlayersCount === 0) {
+      state.status = 'gameover';
+    }
   }
 
   return events;
