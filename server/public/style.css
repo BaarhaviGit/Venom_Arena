@@ -160,7 +160,10 @@ h1 {
 }
 
 canvas {
-  background-color: rgba(10, 15, 25, 0.95);
+  background-color: #1a2035;
+  background-image: linear-gradient(rgba(0, 255, 204, 0.05) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(0, 255, 204, 0.05) 1px, transparent 1px);
+  background-size: 20px 20px;
   border-radius: 8px;
   display: block;
 }

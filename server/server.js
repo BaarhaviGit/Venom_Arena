@@ -39,7 +39,7 @@ setupRedis();
 // In-memory state for rooms on THIS pod (as per README caveat)
 const rooms = {};
 
-const PLAYER_COLORS = ['#000000', '#e6a23c', '#8b6b4a', '#d35400']; // Unique predefined colors
+const PLAYER_COLORS = ['#00ffcc', '#ff0066', '#ffcc00', '#cc33ff']; // Neon Cyan, Neon Pink, Neon Yellow, Neon Purple
 
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);

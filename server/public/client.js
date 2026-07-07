@@ -134,9 +134,9 @@ function draw(state) {
 
   // Draw Food
   const food = state.food;
-  ctx.fillStyle = '#e85d54'; // Soft coral/red for food
-  ctx.shadowColor = 'rgba(232, 93, 84, 0.5)';
-  ctx.shadowBlur = 10;
+  ctx.fillStyle = '#ff0055';
+  ctx.shadowColor = '#ff0055';
+  ctx.shadowBlur = 5; // Reduced from 15 to 5 for better performance
   ctx.beginPath();
   ctx.arc(food.x * cellSize + cellSize/2, food.y * cellSize + cellSize/2, cellSize/2 - 2, 0, 2 * Math.PI);
   ctx.fill();
@@ -174,9 +174,10 @@ function draw(state) {
       }
       prevSegment = segment;
     });
-    // Add glow to the snake
-    ctx.shadowColor = player.color;
-    ctx.shadowBlur = 10;
+    
+    // Performance fix: Drawing shadows for every line segment of a long snake causes massive frame drops (hanging).
+    // So we disable the shadow glow on the snake body, relying instead on the bright neon colors!
+    ctx.shadowBlur = 0;
     ctx.stroke();
 
     // Reset shadow for eyes
