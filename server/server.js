@@ -39,7 +39,7 @@ setupRedis();
 // In-memory state for rooms on THIS pod (as per README caveat)
 const rooms = {};
 
-const PLAYER_COLORS = ['#00ffcc', '#ff0066', '#ffcc00', '#cc33ff']; // Neon Cyan, Neon Pink, Neon Yellow, Neon Purple
+const PLAYER_COLORS = ['#ff1a1a', '#cc0000', '#ff4d4d', '#990000']; // Whitish Red theme snake colors
 
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
@@ -120,12 +120,11 @@ io.on('connection', (socket) => {
 });
 
 function startGameLoop(roomName) {
-  const intervalId = setInterval(() => {
+  let timerId = null;
+
+  function tick() {
     const state = rooms[roomName];
-    if (!state) {
-      clearInterval(intervalId);
-      return;
-    }
+    if (!state) return;
 
     const events = gameLoop(state);
     
@@ -141,15 +140,26 @@ function startGameLoop(roomName) {
     io.to(roomName).emit('gameState', state);
 
     if (state.status === 'gameover') {
-      clearInterval(intervalId);
       // Optional: reset after some time
       setTimeout(() => {
         if (rooms[roomName]) {
           delete rooms[roomName];
         }
       }, 5000);
+      return; // Stop the loop
     }
-  }, 100); // 10 ticks per second
+
+    // Calculate dynamic speed based on max score
+    const playersArr = Object.values(state.players);
+    const maxScore = playersArr.length > 0 ? Math.max(...playersArr.map(p => p.score)) : 0;
+    
+    // Base speed: 150ms. Every 10 points (1 apple) reduces delay by 5ms. Minimum delay: 50ms.
+    const currentDelay = Math.max(50, 150 - (maxScore / 10) * 5);
+
+    timerId = setTimeout(tick, currentDelay);
+  }
+
+  tick();
 }
 
 const PORT = process.env.PORT || 3000;

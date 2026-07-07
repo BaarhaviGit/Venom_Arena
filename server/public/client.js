@@ -66,6 +66,40 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// Mobile Swipe Controls
+let touchStartX = 0;
+let touchStartY = 0;
+
+canvas.addEventListener('touchstart', (e) => {
+  touchStartX = e.changedTouches[0].screenX;
+  touchStartY = e.changedTouches[0].screenY;
+}, { passive: false });
+
+canvas.addEventListener('touchmove', (e) => {
+  e.preventDefault(); // Prevent scrolling while playing
+}, { passive: false });
+
+canvas.addEventListener('touchend', (e) => {
+  const touchEndX = e.changedTouches[0].screenX;
+  const touchEndY = e.changedTouches[0].screenY;
+  
+  const dx = touchEndX - touchStartX;
+  const dy = touchEndY - touchStartY;
+  
+  // Must swipe at least 30px to trigger (prevents accidental taps)
+  if (Math.abs(dx) > Math.abs(dy)) {
+    if (Math.abs(dx) > 30) {
+      if (dx > 0) socket.emit('keydown', 'ArrowRight');
+      else socket.emit('keydown', 'ArrowLeft');
+    }
+  } else {
+    if (Math.abs(dy) > 30) {
+      if (dy > 0) socket.emit('keydown', 'ArrowDown');
+      else socket.emit('keydown', 'ArrowUp');
+    }
+  }
+});
+
 socket.on('gameState', (state) => {
   if (!state) return;
   
@@ -147,38 +181,20 @@ function draw(state) {
     const player = state.players[id];
     if (!player.alive) continue;
 
-    ctx.strokeStyle = player.color;
-    ctx.lineWidth = cellSize * 0.8;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-
-    // Draw snake body as a continuous path
-    ctx.beginPath();
-    let prevSegment = null;
+    // Draw snake body as distinct segments
     player.body.forEach((segment, index) => {
-      const x = segment.x * cellSize + cellSize / 2;
-      const y = segment.y * cellSize + cellSize / 2;
+      const isHead = index === 0;
+      const x = segment.x * cellSize;
+      const y = segment.y * cellSize;
+      const padding = isHead ? 0 : 2; // Head is slightly larger
+      const radius = isHead ? 6 : 4;
       
-      if (index === 0) {
-        ctx.moveTo(x, y);
-        if (player.body.length === 1) {
-          ctx.lineTo(x, y); // Ensure a dot is drawn if length is 1
-        }
-      } else {
-        // Fix wrap glitch: if distance > 1 cell, it wrapped, so use moveTo instead of lineTo
-        if (Math.abs(segment.x - prevSegment.x) > 1 || Math.abs(segment.y - prevSegment.y) > 1) {
-          ctx.moveTo(x, y);
-        } else {
-          ctx.lineTo(x, y);
-        }
-      }
-      prevSegment = segment;
+      ctx.fillStyle = player.color;
+      ctx.beginPath();
+      // Draw a rounded rectangle for each segment
+      ctx.roundRect(x + padding, y + padding, cellSize - padding*2, cellSize - padding*2, radius);
+      ctx.fill();
     });
-    
-    // Performance fix: Drawing shadows for every line segment of a long snake causes massive frame drops (hanging).
-    // So we disable the shadow glow on the snake body, relying instead on the bright neon colors!
-    ctx.shadowBlur = 0;
-    ctx.stroke();
 
     // Reset shadow for eyes
     ctx.shadowBlur = 0;
