@@ -153,8 +153,8 @@ function startGameLoop(roomName) {
     const playersArr = Object.values(state.players);
     const maxScore = playersArr.length > 0 ? Math.max(...playersArr.map(p => p.score)) : 0;
     
-    // Base speed: 100ms. Every 10 points (1 apple) reduces delay by 3ms. Minimum delay: 40ms.
-    const currentDelay = Math.max(40, 100 - (maxScore / 10) * 3);
+    // Base speed: 200ms (Very slow start). Decrease by 1ms per point (1 apple = 10 points = 10ms faster). Minimum delay: 50ms.
+    const currentDelay = Math.max(50, 200 - maxScore);
 
     timerId = setTimeout(tick, currentDelay);
   }

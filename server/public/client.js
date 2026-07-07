@@ -70,12 +70,11 @@ document.addEventListener('keydown', (e) => {
 const bindDPad = (id, key) => {
   const btn = document.getElementById(id);
   if (!btn) return;
-  const trigger = (e) => {
-    e.preventDefault();
+  // Use pointerdown which natively unifies touch and mouse clicks flawlessly
+  btn.addEventListener('pointerdown', (e) => {
+    e.preventDefault(); // prevent unwanted scrolling or zooming
     socket.emit('keydown', key);
-  };
-  btn.addEventListener('touchstart', trigger, { passive: false });
-  btn.addEventListener('mousedown', trigger);
+  });
 };
 
 bindDPad('btn-up', 'ArrowUp');
@@ -141,8 +140,8 @@ function draw(state) {
   // Clear canvas
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Draw grid (optional, for aesthetics)
-  ctx.strokeStyle = 'rgba(212, 180, 131, 0.2)';
+  // Draw grid (make lines darker and crisper)
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.6)'; // Much darker grid lines
   ctx.lineWidth = 1;
   for (let i = 0; i < canvas.width; i += cellSize) {
     ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
@@ -169,14 +168,12 @@ function draw(state) {
       const isHead = index === 0;
       const x = segment.x * cellSize;
       const y = segment.y * cellSize;
-      const padding = isHead ? 0 : 2; // Head is slightly larger
-      const radius = isHead ? 6 : 4;
+      const padding = isHead ? 0 : 1; // Slight gap between segments to make boxes clear
       
       ctx.fillStyle = player.color;
       ctx.beginPath();
-      // Draw a rounded rectangle for each segment
-      ctx.roundRect(x + padding, y + padding, cellSize - padding*2, cellSize - padding*2, radius);
-      ctx.fill();
+      // Use fillRect instead of roundRect for better performance and clear "box" look
+      ctx.fillRect(x + padding, y + padding, cellSize - padding*2, cellSize - padding*2);
     });
 
     // Reset shadow for eyes
