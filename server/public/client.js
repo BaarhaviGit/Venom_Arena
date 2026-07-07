@@ -66,39 +66,22 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// Mobile Swipe Controls
-let touchStartX = 0;
-let touchStartY = 0;
+// Mobile D-Pad Button Events
+const bindDPad = (id, key) => {
+  const btn = document.getElementById(id);
+  if (!btn) return;
+  const trigger = (e) => {
+    e.preventDefault();
+    socket.emit('keydown', key);
+  };
+  btn.addEventListener('touchstart', trigger, { passive: false });
+  btn.addEventListener('mousedown', trigger);
+};
 
-canvas.addEventListener('touchstart', (e) => {
-  touchStartX = e.changedTouches[0].screenX;
-  touchStartY = e.changedTouches[0].screenY;
-}, { passive: false });
-
-canvas.addEventListener('touchmove', (e) => {
-  e.preventDefault(); // Prevent scrolling while playing
-}, { passive: false });
-
-canvas.addEventListener('touchend', (e) => {
-  const touchEndX = e.changedTouches[0].screenX;
-  const touchEndY = e.changedTouches[0].screenY;
-  
-  const dx = touchEndX - touchStartX;
-  const dy = touchEndY - touchStartY;
-  
-  // Must swipe at least 30px to trigger (prevents accidental taps)
-  if (Math.abs(dx) > Math.abs(dy)) {
-    if (Math.abs(dx) > 30) {
-      if (dx > 0) socket.emit('keydown', 'ArrowRight');
-      else socket.emit('keydown', 'ArrowLeft');
-    }
-  } else {
-    if (Math.abs(dy) > 30) {
-      if (dy > 0) socket.emit('keydown', 'ArrowDown');
-      else socket.emit('keydown', 'ArrowUp');
-    }
-  }
-});
+bindDPad('btn-up', 'ArrowUp');
+bindDPad('btn-down', 'ArrowDown');
+bindDPad('btn-left', 'ArrowLeft');
+bindDPad('btn-right', 'ArrowRight');
 
 socket.on('gameState', (state) => {
   if (!state) return;

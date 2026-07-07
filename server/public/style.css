@@ -251,3 +251,55 @@ canvas {
     opacity: 0;
   }
 }
+
+/* Mobile D-Pad Controls */
+#mobile-controls {
+  margin-top: 15px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.d-pad {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.d-pad-middle {
+  display: flex;
+  gap: 50px;
+}
+
+.d-btn {
+  width: 55px;
+  height: 55px;
+  border-radius: 50%;
+  background: var(--panel-bg);
+  border: 2px solid var(--accent-color);
+  color: var(--accent-color);
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(255, 77, 77, 0.2);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.d-btn:active, .d-btn:hover {
+  background: var(--accent-color);
+  color: #fff;
+  transform: scale(0.95);
+}
+
+/* Hide by default on desktop screens */
+@media (min-width: 769px) {
+  #mobile-controls {
+    display: none !important;
+  }
+}
